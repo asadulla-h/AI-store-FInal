@@ -8,11 +8,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory="Frontend"), name="static")
 
 @app.get("/")
 async def read_index():
-    return FileResponse("frontend/index.html")
+    return FileResponse("Frontend/index.html")
 
 # 1. CORS is CRITICAL: This allows your widget on ANY site to talk to your backend
 app.add_middleware(
