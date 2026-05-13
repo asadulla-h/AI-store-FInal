@@ -13,8 +13,11 @@ index = pc.Index("ecommerce-catalog")
 def get_embedding(text: str) -> list[float]:
     """Converts a text string into a 768-dimensional numerical vector."""
     response = ai_client.models.embed_content(
-        model="text-embedding-004",
+        model="models/gemini-embedding-001", 
         contents=text,
+        config={
+            'output_dimensionality': 768  # This is the magic line!
+        }
     )
     # Extract the numerical array from the response object
     return response.embeddings[0].values
@@ -59,11 +62,11 @@ def search_catalog(query: str, top_k: int = 3):
     for match in results.matches:
         matches.append({
             "id": match.id,
-            "score": round(match.score, 3), # A score closer to 1.0 means a highly relevant match
-            "name": match.metadata["name"],
-            "price": match.metadata["price"],
-            "url": match.metadata["url"]
-        })
+            "score": round(match.score, 3),
+            "name": match.metadata.get("name", "Product"),
+            "price": match.metadata.get("price", "N/A"),
+            "url": match.metadata.get("url", "#")
+})
     return matches
 
 # --- LOCAL TESTING BLOCK ---
