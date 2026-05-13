@@ -45,7 +45,7 @@ async def chat_endpoint(request: ChatRequest):
         """
 
         response = ai_client.models.generate_content(
-            model="gemini-2.0-flash", # Use Flash for speed and lower cost
+            model="gemini-2.5-flash", 
             config={'system_instruction': system_prompt},
             contents=request.message
         )
