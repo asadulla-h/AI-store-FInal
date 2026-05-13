@@ -28,6 +28,13 @@
         chatInput.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
+        // Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+        chatMessages.appendChild(typingIndicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
         // Ensure this points to the correct backend API endpoint
         // If deployed to Render, it might be the Render URL
         // However, since the frontend is served by the backend directly, 
@@ -43,6 +50,9 @@
             
             const data = await response.json();
 
+            // Remove typing indicator
+            chatMessages.removeChild(typingIndicator);
+
             // Add AI response to UI
             const aiMsgDiv = document.createElement('div');
             aiMsgDiv.className = 'ai-message';
@@ -50,6 +60,11 @@
             chatMessages.appendChild(aiMsgDiv);
 
         } catch (error) {
+            // Remove typing indicator if there's an error
+            if (chatMessages.contains(typingIndicator)) {
+                chatMessages.removeChild(typingIndicator);
+            }
+
             const errorDiv = document.createElement('div');
             errorDiv.className = 'ai-message';
             errorDiv.innerText = "Connection error. Please try again later.";
