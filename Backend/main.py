@@ -10,13 +10,14 @@ from pathlib import Path
 
 app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent.parent 
-FRONTEND_DIR = BASE_DIR / "Frontend"
 
-# Mount using the absolute path
+FRONTEND_DIR = BASE_DIR / "Frontend" / "portfolio" 
+
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 @app.get("/")
 async def read_index():
+    # Serve the file from the new nested path
     return FileResponse(FRONTEND_DIR / "index.html")
 
 # 1. CORS is CRITICAL: This allows your widget on ANY site to talk to your backend
