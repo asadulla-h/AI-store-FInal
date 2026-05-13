@@ -154,7 +154,7 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
         // ** REPLACE THIS URL WITH YOUR FASTAPI BACKEND URL **
-        const API_URL = 'http://localhost:8000/api/routes_web/chat'; 
+        const API_URL = 'https://ai-store-final.onrender.com/api/chat'; 
 
         try {
             const response = await fetch(API_URL, {
@@ -184,4 +184,12 @@
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
+
+const chatToggle = document.getElementById('chat-toggle');
+const chatWindow = document.getElementById('chat-window');
+const closeChat = document.getElementById('close-chat');
+
+chatToggle.onclick = () => chatWindow.classList.toggle('hidden');
+closeChat.onclick = () => chatWindow.classList.add('hidden');
+
 })();

@@ -4,8 +4,15 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from database.vector_db import search_catalog
 from google import genai
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+@app.get("/")
+async def read_index():
+    return FileResponse("frontend/index.html")
 
 # 1. CORS is CRITICAL: This allows your widget on ANY site to talk to your backend
 app.add_middleware(

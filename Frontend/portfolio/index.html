@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury E-commerce Concierge | AI Agency</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/widget.js"></script>
+</head>
+<body>
+
+    <!-- Main Landing Content (Placeholder for your Client's Site) -->
+    <main class="store-preview">
+        <section class="hero">
+            <h1>The Curated Collection</h1>
+            <p>Experience personalized shopping reimagined through artificial intelligence.</p>
+        </section>
+    </main>
+
+    <!-- AI Concierge Widget Container -->
+    <div id="ai-concierge-root">
+        
+        <!-- The Floating Toggle Button -->
+        <button id="chat-toggle" aria-label="Open Concierge">
+            <span class="toggle-icon">
+                <!-- Simple SVG for a premium, minimal look -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </span>
+        </button>
+
+        <!-- The Chat Interface -->
+        <div id="chat-window" class="hidden">
+            <header class="chat-header">
+                <div class="header-info">
+                    <span class="status-indicator"></span>
+                    <h3>Concierge</h3>
+                </div>
+                <button id="close-chat">&times;</button>
+            </header>
+
+            <div id="chat-messages" class="chat-body">
+                <!-- AI Welcome Message -->
+                <div class="ai-message">
+                    Welcome. I am your personal shopping concierge. How may I assist you with our collection today?
+                </div>
+            </div>
+
+            <div class="chat-footer">
+                <div class="input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Ask about products, sizing, or returns..." autocomplete="off">
+                    <button id="send-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+                <p class="brand-tag">Powered by Your Agency AI</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Script Reference -->
+    <script src="widget.js"></script>
+</body>
+</html>
