@@ -66,7 +66,9 @@ async def chat_endpoint(request: ChatRequest):
             contents=request.message
         )
 
-        return {"reply": response.text}
+        bot_text = response.text if hasattr(response, 'text') else "I'm sorry, I couldn't process that."
+
+        return {"reply": bot_text}
 
     except Exception as e:
         print(f"Error: {e}")
