@@ -7,8 +7,19 @@ from google import genai
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, replace with your actual portfolio domain
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent 
 
 FRONTEND_DIR = BASE_DIR / "Frontend" / "portfolio" 
@@ -19,14 +30,6 @@ app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 async def read_index():
     # Serve the file from the new nested path
     return FileResponse(FRONTEND_DIR / "index.html")
-
-# 1. CORS is CRITICAL: This allows your widget on ANY site to talk to your backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # In production, replace with your actual portfolio domain
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Initialize Gemini Client
 ai_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
@@ -44,7 +47,7 @@ async def chat_endpoint(request: ChatRequest):
         # Step B: Format the products into a string for Gemini
         context = "Here are some relevant products we have in stock:\n"
         for p in related_products:
-            context += f"- {p['name']}: Rs. {p['price']} (Link: {p['url']})\n"
+            context += f"- {p['title']}: Rs. {p['price']} (Link: {p['url']})\n"
 
         # Step C: Ask Gemini to generate a response
         system_prompt = f"""
