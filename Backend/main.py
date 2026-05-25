@@ -56,6 +56,21 @@ ai_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 STORE_NAME = os.getenv("STORE_NAME", "Weave Wardrobe")
 
 
+def extract_gemini_text(response) -> str:
+    if getattr(response, "text", None):
+        return response.text.strip()
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        if not content:
+            continue
+        for part in getattr(content, "parts", None) or []:
+            text = getattr(part, "text", None)
+            if text:
+                return text.strip()
+    return ""
+
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     session_id: str = Field(..., min_length=8, max_length=128)
@@ -144,7 +159,11 @@ async def chat_endpoint(request: Request, body: ChatRequest):
         contents = history_for_gemini(body.session_id, body.message)
 
         if intent == "PRODUCT_SEARCH":
-            related_products = search_catalog(body.message, top_k=4)
+            try:
+                related_products = search_catalog(body.message, top_k=4)
+            except Exception as search_exc:
+                print(f"Catalog search failed: {search_exc}")
+                related_products = []
             system_prompt = build_product_system_prompt(related_products)
         else:
             system_prompt = GENERAL_INQUIRY_PROMPT
@@ -155,7 +174,7 @@ async def chat_endpoint(request: Request, body: ChatRequest):
             contents=contents,
         )
 
-        bot_text = response.text if hasattr(response, "text") and response.text else (
+        bot_text = extract_gemini_text(response) or (
             "I'm sorry, I couldn't process that. Please try again."
         )
 

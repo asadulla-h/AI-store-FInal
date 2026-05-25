@@ -1,8 +1,6 @@
 (function() {
-    // 1. Check if it already exists to avoid double-loading
     if (document.getElementById('premium-ai-widget-container')) return;
 
-    // 2. Inject Cinematic CSS
     const style = document.createElement('style');
     style.innerHTML = `
         #premium-ai-widget-container {
@@ -10,7 +8,7 @@
             bottom: 20px;
             right: 20px;
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            z-index: 2147483647; /* Force to front */
+            z-index: 2147483647;
         }
         #premium-ai-chat-button {
             width: 60px; height: 60px; border-radius: 50%;
@@ -53,10 +51,10 @@
             background: #2C2C2C; color: white; border: none; padding: 0 15px;
             margin-left: 8px; border-radius: 6px; cursor: pointer; font-weight: bold;
         }
+        #premium-ai-chat-send:disabled { opacity: 0.6; cursor: not-allowed; }
     `;
     document.head.appendChild(style);
 
-    // 3. Inject HTML
     const container = document.createElement('div');
     container.id = 'premium-ai-widget-container';
     container.innerHTML = `
@@ -70,28 +68,65 @@
                 <button id="premium-ai-chat-send">Send</button>
             </div>
         </div>
-        <button id="premium-ai-chat-button">
+        <button id="premium-ai-chat-button" type="button" aria-label="Open chat">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </button>
     `;
     document.body.appendChild(container);
 
-    // 4. Logic
     const chatButton = document.getElementById('premium-ai-chat-button');
     const chatWindow = document.getElementById('premium-ai-chat-window');
     const chatInput = document.getElementById('premium-ai-chat-input');
     const chatSend = document.getElementById('premium-ai-chat-send');
     const chatMessages = document.getElementById('premium-ai-chat-messages');
 
+    const API_URL = (typeof window !== 'undefined' && window.AI_WIDGET_API_URL)
+        || (window.location.origin + '/api/chat');
+
+    const SESSION_STORAGE_KEY = 'weave_ai_session_id';
+
+    function getOrCreateSessionId() {
+        try {
+            let id = localStorage.getItem(SESSION_STORAGE_KEY);
+            if (!id) {
+                id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+                localStorage.setItem(SESSION_STORAGE_KEY, id);
+            }
+            return id;
+        } catch (_) {
+            return 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+        }
+    }
+
+    const sessionId = getOrCreateSessionId();
+
+    function parseReply(data) {
+        if (!data || typeof data !== 'object') return null;
+        if (typeof data.reply === 'string' && data.reply.trim()) return data.reply;
+        if (typeof data.response === 'string' && data.response.trim()) return data.response;
+        if (typeof data.message === 'string' && data.message.trim()) return data.message;
+        if (typeof data.detail === 'string') return data.detail;
+        if (Array.isArray(data.detail)) {
+            return data.detail.map(function(d) { return d.msg || String(d); }).join(' ');
+        }
+        return null;
+    }
+
     chatButton.onclick = () => {
         chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
     };
 
+    let inFlight = false;
+
     const sendMessage = async () => {
         const text = chatInput.value.trim();
-        if (!text) return;
+        if (!text || inFlight) return;
 
-        // Add user message
+        inFlight = true;
+        chatSend.disabled = true;
+
         const userMsg = document.createElement('div');
         userMsg.className = 'user-message';
         userMsg.innerText = text;
@@ -100,24 +135,43 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
         try {
-            const response = await fetch('https://ai-store-final.onrender.com/api/chat', {
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, session_id: 'demo-user' })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-Id': sessionId
+                },
+                body: JSON.stringify({ message: text, session_id: sessionId })
             });
-            const data = await response.json();
-            
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (_) {
+                data = {};
+            }
+
             const aiMsg = document.createElement('div');
             aiMsg.className = 'ai-message';
-            aiMsg.innerText = data.reply;
+
+            if (response.status === 429) {
+                aiMsg.innerText = "You're sending messages too quickly. Please wait a moment.";
+            } else if (!response.ok) {
+                aiMsg.innerText = parseReply(data) || 'The concierge is temporarily unavailable. Please try again.';
+            } else {
+                aiMsg.innerText = parseReply(data) || 'Sorry, I could not generate a reply. Please try again.';
+            }
             chatMessages.appendChild(aiMsg);
         } catch (e) {
             const err = document.createElement('div');
             err.className = 'ai-message';
-            err.innerText = "Backend connection error.";
+            err.innerText = "Connection error. Check that the API is running and CORS allows this site.";
             chatMessages.appendChild(err);
+        } finally {
+            inFlight = false;
+            chatSend.disabled = false;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-        chatMessages.scrollTop = chatMessages.scrollHeight;
     };
 
     chatSend.onclick = sendMessage;
