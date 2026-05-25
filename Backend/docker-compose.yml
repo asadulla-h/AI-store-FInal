@@ -1,0 +1,32 @@
+# Redis for chat session state (Fedora: use Docker or Podman Compose)
+#
+# Docker:
+#   sudo dnf install -y docker docker-compose-plugin
+#   sudo systemctl enable --now docker
+#   sudo usermod -aG docker $USER   # log out/in after this
+#   docker compose up -d
+#
+# Podman (rootless):
+#   sudo dnf install -y podman podman-compose
+#   podman-compose up -d
+#
+# Verify: redis-cli -u redis://localhost:6379 ping  -> PONG
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-chat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis_data:

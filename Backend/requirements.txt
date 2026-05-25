@@ -6,4 +6,5 @@ python-dotenv
 pydantic-settings
 requests
 aiofiles
-google-generativeai
+redis
+slowapi

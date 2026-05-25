@@ -1,5 +1,4 @@
 (function() {
-    // 1. Inject Cinematic CSS Styling
     const style = document.createElement('style');
     style.innerHTML = `
         #premium-ai-widget-container {
@@ -13,7 +12,7 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4A0E1C, #8B1E32); /* Deep cinematic red */
+            background: linear-gradient(135deg, #4A0E1C, #8B1E32);
             color: white;
             border: none;
             cursor: pointer;
@@ -105,10 +104,13 @@
             cursor: pointer;
             font-weight: bold;
         }
+        #premium-ai-chat-send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     `;
     document.head.appendChild(style);
 
-    // 2. Inject HTML Structure
     const container = document.createElement('div');
     container.id = 'premium-ai-widget-container';
     container.innerHTML = `
@@ -122,30 +124,54 @@
                 <button id="premium-ai-chat-send">Send</button>
             </div>
         </div>
-        <button id="premium-ai-chat-button">
+        <button id="premium-ai-chat-button" type="button" aria-label="Open chat">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </button>
     `;
     document.body.appendChild(container);
 
-    // 3. Javascript Logic
     const chatButton = document.getElementById('premium-ai-chat-button');
     const chatWindow = document.getElementById('premium-ai-chat-window');
     const chatInput = document.getElementById('premium-ai-chat-input');
     const chatSend = document.getElementById('premium-ai-chat-send');
     const chatMessages = document.getElementById('premium-ai-chat-messages');
 
-    // Toggle Chat Window
+    const API_URL = (typeof window !== 'undefined' && window.AI_WIDGET_API_URL)
+        || 'http://127.0.0.1:8000/api/chat';
+
+    const SESSION_STORAGE_KEY = 'premium_ai_session_id';
+
+    function getOrCreateSessionId() {
+        try {
+            let id = localStorage.getItem(SESSION_STORAGE_KEY);
+            if (!id) {
+                id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11);
+                localStorage.setItem(SESSION_STORAGE_KEY, id);
+            }
+            return id;
+        } catch (_) {
+            return 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11);
+        }
+    }
+
+    const sessionId = getOrCreateSessionId();
+
     chatButton.addEventListener('click', () => {
-        chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
+        const open = chatWindow.style.display === 'flex';
+        chatWindow.style.display = open ? 'none' : 'flex';
     });
 
-    // Handle Sending Messages
+    let inFlight = false;
+
     const sendMessage = async () => {
         const text = chatInput.value.trim();
-        if (!text) return;
+        if (!text || inFlight) return;
 
-        // Add user message to UI
+        inFlight = true;
+        chatSend.disabled = true;
+
         const userMsgDiv = document.createElement('div');
         userMsgDiv.className = 'user-message';
         userMsgDiv.innerText = text;
@@ -153,19 +179,25 @@
         chatInput.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // ** REPLACE THIS URL WITH YOUR FASTAPI BACKEND URL **
-        const API_URL = 'https://ai-store-final.onrender.com/api/chat'; 
-
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, session_id: 'demo-123' })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-Id': sessionId
+                },
+                body: JSON.stringify({ message: text, session_id: sessionId })
             });
-            
-            const data = await response.json();
 
-            // Add AI response to UI
+            if (response.status === 429) {
+                throw new Error('rate_limit');
+            }
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || 'request_failed');
+            }
+
             const aiMsgDiv = document.createElement('div');
             aiMsgDiv.className = 'ai-message';
             aiMsgDiv.innerText = data.reply || "I am currently offline.";
@@ -174,22 +206,21 @@
         } catch (error) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'ai-message';
-            errorDiv.innerText = "Connection error. Please try again later.";
+            if (error.message === 'rate_limit') {
+                errorDiv.innerText = "You're sending messages too quickly. Please wait a moment.";
+            } else {
+                errorDiv.innerText = "Connection error. Please try again later.";
+            }
             chatMessages.appendChild(errorDiv);
+        } finally {
+            inFlight = false;
+            chatSend.disabled = false;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-        chatMessages.scrollTop = chatMessages.scrollHeight;
     };
 
     chatSend.addEventListener('click', sendMessage);
     chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
-
-const chatToggle = document.getElementById('chat-toggle');
-const chatWindow = document.getElementById('chat-window');
-const closeChat = document.getElementById('close-chat');
-
-chatToggle.onclick = () => chatWindow.classList.toggle('hidden');
-closeChat.onclick = () => chatWindow.classList.add('hidden');
-
 })();
